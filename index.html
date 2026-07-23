@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
 <title>1% Better</title>
 <link rel="manifest" href="manifest.json" />
-<meta name="theme-color" content="#161210" />
+<meta name="theme-color" content="#131F24" />
 <meta name="apple-mobile-web-app-capable" content="yes" />
 <meta name="mobile-web-app-capable" content="yes" />
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
@@ -14,38 +14,42 @@
 <link rel="icon" type="image/png" href="icon-192.png" />
 <style>
   :root{
-    --bg:#F3EFE7; --surface:#FBF8F2; --surface-2:#ECE6D9;
-    --text:#241F1A; --muted:#6F675B; --line:#E1D9C9;
-    --gold:#A9761A; --gold-btn:#B9821B; --gold-ink:#2A1E07;
-    --sage:#4E7A5A; --sage-soft:#E4EEE4;
-    --warn:#B0462F; --warn-soft:#F3E2DC;
+    --bg:#FFFFFF; --surface:#FFFFFF; --surface-2:#F2F2F2;
+    --text:#4B4B4B; --muted:#8A8A8A; --line:#E5E5E5;
+    --gold:#FF9600; --gold-btn:#58CC02; --gold-ink:#FFFFFF; --btn-edge:#46A302;
+    --sage:#58CC02; --sage-soft:#D7FFB8; --sage-ink:#58A700;
+    --warn:#FF4B4B; --warn-soft:#FFDFE0;
+    --blue:#1CB0F6;
     --radius:16px; --maxw:560px;
-    --font-ui:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,system-ui,sans-serif;
-    --font-serif:ui-serif,"New York",Georgia,"Times New Roman",serif;
+    --font-ui:ui-rounded,"SF Pro Rounded",-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,system-ui,sans-serif;
+    --font-serif:ui-rounded,"SF Pro Rounded",-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,system-ui,sans-serif;
     --font-mono:ui-monospace,"SF Mono",Menlo,monospace;
   }
   @media (prefers-color-scheme:dark){
     :root{
-      --bg:#161210; --surface:#211B15; --surface-2:#2C241C;
-      --text:#F0E9DE; --muted:#A99B89; --line:#342A20;
-      --gold:#E7A93F; --gold-btn:#E7A93F; --gold-ink:#241802;
-      --sage:#7FB68C; --sage-soft:#213026;
-      --warn:#E0795E; --warn-soft:#3A241E;
+      --bg:#131F24; --surface:#202F36; --surface-2:#37464F;
+      --text:#F1F7FB; --muted:#8EA5B0; --line:#37464F;
+      --gold:#FFC800; --gold-btn:#58CC02; --gold-ink:#FFFFFF; --btn-edge:#3F9C01;
+      --sage:#58CC02; --sage-soft:#1E3A10; --sage-ink:#79E23D;
+      --warn:#FF5B5B; --warn-soft:#3E2022;
+      --blue:#49C0F8;
     }
   }
   :root[data-theme="dark"]{
-    --bg:#161210; --surface:#211B15; --surface-2:#2C241C;
-    --text:#F0E9DE; --muted:#A99B89; --line:#342A20;
-    --gold:#E7A93F; --gold-btn:#E7A93F; --gold-ink:#241802;
-    --sage:#7FB68C; --sage-soft:#213026;
-    --warn:#E0795E; --warn-soft:#3A241E;
+    --bg:#131F24; --surface:#202F36; --surface-2:#37464F;
+    --text:#F1F7FB; --muted:#8EA5B0; --line:#37464F;
+    --gold:#FFC800; --gold-btn:#58CC02; --gold-ink:#FFFFFF; --btn-edge:#3F9C01;
+    --sage:#58CC02; --sage-soft:#1E3A10; --sage-ink:#79E23D;
+    --warn:#FF5B5B; --warn-soft:#3E2022;
+    --blue:#49C0F8;
   }
   :root[data-theme="light"]{
-    --bg:#F3EFE7; --surface:#FBF8F2; --surface-2:#ECE6D9;
-    --text:#241F1A; --muted:#6F675B; --line:#E1D9C9;
-    --gold:#A9761A; --gold-btn:#B9821B; --gold-ink:#2A1E07;
-    --sage:#4E7A5A; --sage-soft:#E4EEE4;
-    --warn:#B0462F; --warn-soft:#F3E2DC;
+    --bg:#FFFFFF; --surface:#FFFFFF; --surface-2:#F2F2F2;
+    --text:#4B4B4B; --muted:#8A8A8A; --line:#E5E5E5;
+    --gold:#FF9600; --gold-btn:#58CC02; --gold-ink:#FFFFFF; --btn-edge:#46A302;
+    --sage:#58CC02; --sage-soft:#D7FFB8; --sage-ink:#58A700;
+    --warn:#FF4B4B; --warn-soft:#FFDFE0;
+    --blue:#1CB0F6;
   }
 
   *{box-sizing:border-box}
@@ -61,7 +65,8 @@
     display:flex; flex-direction:column;
     padding:max(18px,env(safe-area-inset-top)) 18px max(20px,env(safe-area-inset-bottom));
   }
-  .wordmark{font-family:var(--font-serif); font-weight:600; letter-spacing:-.01em}
+  .wordmark{font-family:var(--font-serif); font-weight:800; letter-spacing:-.01em}
+  .stat{display:inline-flex; align-items:center; gap:4px; font-weight:800; font-size:15px; font-variant-numeric:tabular-nums}
   .eyebrow{font-size:12px; letter-spacing:.09em; text-transform:uppercase; color:var(--muted); font-weight:600}
   h1,h2,h3{text-wrap:balance; margin:0}
   button{font-family:inherit; cursor:pointer}
@@ -72,14 +77,14 @@
   .top .wordmark{font-size:19px}
   .top .dot{color:var(--gold)}
   .iconbtn{
-    background:transparent; border:1px solid var(--line); color:var(--muted);
-    width:38px; height:38px; border-radius:11px; font-size:16px; display:grid; place-items:center;
+    background:var(--surface); border:2px solid var(--line); border-bottom-width:3px; color:var(--muted);
+    width:38px; height:38px; border-radius:12px; font-size:16px; display:grid; place-items:center;
   }
   .iconbtn:active{transform:scale(.94)}
 
   /* cards */
   .card{
-    background:var(--surface); border:1px solid var(--line); border-radius:var(--radius);
+    background:var(--surface); border:2px solid var(--line); border-radius:var(--radius);
     padding:20px;
   }
   .stack{display:flex; flex-direction:column; gap:14px}
@@ -100,7 +105,7 @@
   .consist .sub{font-size:13.5px; color:var(--muted)}
 
   /* identity */
-  .identity{font-family:var(--font-serif); font-size:22px; line-height:1.3; letter-spacing:-.01em}
+  .identity{font-family:var(--font-serif); font-size:20px; line-height:1.35; letter-spacing:-.01em; font-weight:800}
 
   /* plan list */
   .plan{display:flex; flex-direction:column; gap:9px}
@@ -111,18 +116,21 @@
   }
   .plan .meta{color:var(--muted); font-size:13px; margin-left:auto}
 
-  /* buttons */
+  /* buttons — chunky pressable, Duolingo-style */
   .btn{
-    display:block; width:100%; border:none; border-radius:14px; padding:17px 18px;
-    font-size:17px; font-weight:650; background:var(--gold-btn); color:var(--gold-ink);
-    letter-spacing:.005em; min-height:56px;
+    display:block; width:100%; border:none; border-radius:16px; padding:15px 18px;
+    font-size:15px; font-weight:800; background:var(--gold-btn); color:var(--gold-ink);
+    letter-spacing:.06em; text-transform:uppercase; min-height:54px;
+    border-bottom:4px solid var(--btn-edge);
   }
-  .btn:active{transform:translateY(1px)}
-  .btn.ghost{background:transparent; color:var(--text); border:1px solid var(--line); font-weight:600}
-  .btn.soft{background:var(--surface-2); color:var(--text); font-weight:600}
-  .btn.small{padding:12px 14px; font-size:15px; min-height:0; border-radius:12px}
-  .linkbtn{background:none; border:none; color:var(--muted); text-decoration:underline; font-size:14px; padding:8px}
-  a{color:var(--gold)}
+  .btn:active{transform:translateY(2px); border-bottom-width:2px}
+  .btn.ghost{background:var(--surface); color:var(--blue); border:2px solid var(--line); border-bottom-width:4px}
+  .btn.ghost:active{transform:translateY(2px); border-bottom-width:2px}
+  .btn.soft{background:var(--surface); color:var(--blue); border:2px solid var(--line); border-bottom-width:4px}
+  .btn.soft:active{transform:translateY(2px); border-bottom-width:2px}
+  .btn.small{padding:10px 14px; font-size:13px; min-height:0; border-radius:13px}
+  .linkbtn{background:none; border:none; color:var(--blue); text-decoration:none; font-weight:700; font-size:14px; padding:8px}
+  a{color:var(--blue)}
 
   /* banner (re-entry) */
   .banner{background:var(--sage-soft); border:1px solid var(--line); border-radius:var(--radius); padding:16px 18px}
@@ -130,17 +138,16 @@
   .banner p{margin:0 0 12px; font-size:14.5px; color:var(--muted)}
   .banner.warn{background:var(--warn-soft)}
 
-  /* run mode */
-  .runtop{display:flex; align-items:center; gap:8px; margin-bottom:16px}
-  .pips{display:flex; gap:6px; flex:1}
-  .pip{height:5px; border-radius:3px; background:var(--line); flex:1; transition:background .25s}
-  .pip.on{background:var(--gold)}
-  .pip.done{background:var(--sage)}
+  /* run mode — fat lesson progress bar */
+  .runtop{display:flex; align-items:center; gap:10px; margin-bottom:16px}
+  .pbar{flex:1; height:14px; border-radius:8px; background:var(--surface-2); overflow:hidden}
+  .pfill{height:100%; border-radius:8px; background:var(--gold-btn); transition:width .35s; position:relative; min-width:10px}
+  .pfill:after{content:""; position:absolute; left:8px; right:8px; top:3px; height:4px; border-radius:2px; background:rgba(255,255,255,.32)}
   .runcard{display:flex; flex-direction:column; gap:16px}
   .qtext{font-size:22px; font-weight:650; line-height:1.28; letter-spacing:-.01em}
   .lead{font-size:16.5px; line-height:1.6}
   .note{font-size:12.5px; color:var(--muted); font-style:italic}
-  .word{font-family:var(--font-serif); font-size:34px; font-weight:600; letter-spacing:-.02em}
+  .word{font-family:var(--font-serif); font-size:32px; font-weight:800; letter-spacing:-.02em}
   .word .pos{font-family:var(--font-ui); font-size:13px; color:var(--muted); font-style:italic; font-weight:500; margin-left:8px}
   .def{font-size:17px}
   .ex{font-size:15px; color:var(--muted); border-left:2px solid var(--gold); padding-left:12px}
@@ -155,18 +162,24 @@
   .tip{background:var(--surface-2); border-radius:12px; padding:12px 14px; font-size:14px}
   .tip b{color:var(--gold)}
 
-  /* quiz options */
+  /* quiz options — bordered answer cards with a pressable bottom edge */
   .opts{display:flex; flex-direction:column; gap:10px}
   .opt{
-    text-align:left; width:100%; padding:15px 16px; border-radius:13px;
-    border:1px solid var(--line); background:var(--surface); color:var(--text);
-    font-size:16px; font-weight:500; transition:border-color .15s, background .15s;
+    text-align:left; width:100%; padding:14px 16px; border-radius:14px;
+    border:2px solid var(--line); border-bottom-width:4px;
+    background:var(--surface); color:var(--text);
+    font-size:16px; font-weight:700; transition:border-color .15s, background .15s;
   }
-  .opt.correct{border-color:var(--sage); background:var(--sage-soft)}
-  .opt.wrong{border-color:var(--warn); background:var(--warn-soft)}
+  .opt:active{transform:translateY(2px); border-bottom-width:2px}
+  .opt.correct{border-color:var(--sage); background:var(--sage-soft); color:var(--sage-ink)}
+  .opt.wrong{border-color:var(--warn); background:var(--warn-soft); color:var(--warn)}
   .opt:disabled{opacity:1}
   .explain{font-size:14.5px; color:var(--muted)}
   .explain b{color:var(--text)}
+  .fbanner{border-radius:14px; padding:13px 15px; font-size:14.5px; margin-top:14px; line-height:1.45; font-weight:600}
+  .fbanner.ok{background:var(--sage-soft); color:var(--sage-ink)}
+  .fbanner.no{background:var(--warn-soft); color:var(--warn)}
+  .fbanner b{font-weight:800; font-size:15.5px}
 
   /* speak timer */
   .timerwrap{display:grid; place-items:center; gap:6px; padding:8px 0}
@@ -923,8 +936,12 @@ function ringSVG(count,of){
 }
 
 function topBar(bare){
+  const streak=consistencyFrom(S.days,todayStr());
   return '<div class="top"><div class="wordmark">1<span class="dot">%</span> Better</div>'
-    +(bare?'':'<div style="display:flex;gap:8px"><button class="iconbtn" id="progBtn" aria-label="Progress">📊</button><button class="iconbtn" id="menuBtn" aria-label="Menu">⚙</button></div>')
+    +(bare?'':'<div style="display:flex;gap:11px;align-items:center">'
+      +'<span class="stat" style="color:#FF9600">🔥'+streak+'</span>'
+      +'<span class="stat" style="color:var(--gold)">⚡'+(S.xp||0)+'</span>'
+      +'<button class="iconbtn" id="progBtn" aria-label="Progress">📊</button><button class="iconbtn" id="menuBtn" aria-label="Menu">⚙</button></div>')
     +'</div>';
 }
 
@@ -1024,8 +1041,9 @@ function renderCard(){
   const {cards,i}=RUN;
   const c=cards[i];
   let inner='<div class="runtop">'
-    +'<div class="pips">'+cards.map((_,k)=>'<span class="pip '+(k<i?'done':(k===i?'on':''))+'"></span>').join("")+'</div>'
-    +'<button class="iconbtn" id="quit" aria-label="Back to today">✕</button></div>';
+    +'<button class="iconbtn" id="quit" aria-label="Back to today">✕</button>'
+    +'<div class="pbar"><div class="pfill" style="width:'+Math.max(5,Math.round(i/cards.length*100))+'%"></div></div>'
+    +'</div>';
 
   if(c.t==="lesson"){
     const inCh=CSC_UNITS.filter(u=>u.ch===c.data.ch);
@@ -1078,8 +1096,8 @@ function renderCard(){
         const correct=(k===c.data.a);
         if(!correct) b.classList.add("wrong");
         if(correct){ sndCorrect(); gainXP(10); recordRight(c.qi); } else { sndWrong(); gainXP(2); recordWrong(c.qi); }
-        document.getElementById("qfeed").innerHTML='<p class="explain" style="margin:14px 0 0">'
-          +(correct?'<b>Right.</b> +10 XP · ':'<b>Not quite.</b> +2 XP for trying · ')+esc(c.data.e)+'</p>';
+        document.getElementById("qfeed").innerHTML='<div class="fbanner '+(correct?'ok':'no')+'">'
+          +'<b>'+(correct?'Nicely done! +10 XP':'Not quite — +2 XP for trying')+'</b><br>'+esc(c.data.e)+'</div>';
         const n=document.getElementById("next"); n.style.display="block";
         if(!S.quizSeen.includes(c.qi)){ S.quizSeen.push(c.qi); if(S.quizSeen.length>200) S.quizSeen.shift(); }
         S.quizLog.push({d:todayStr(), c:correct}); if(S.quizLog.length>3000) S.quizLog.shift();
@@ -1158,7 +1176,7 @@ function renderCelebrate(firstOfDay){
 function confetti(){
   if(matchMedia("(prefers-reduced-motion:reduce)").matches) return;
   const host=document.getElementById("burst");
-  const cols=["#B9821B","#E7A93F","#4E7A5A","#7FB68C"];
+  const cols=["#58CC02","#1CB0F6","#FFC800","#FF9600","#CE82FF","#FF4B4B"];
   for(let i=0;i<80;i++){
     const s=document.createElement("span"); s.className="spark";
     s.style.left=Math.random()*100+"vw"; s.style.top=(-10-Math.random()*20)+"vh";
