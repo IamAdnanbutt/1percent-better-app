@@ -1114,16 +1114,23 @@ function renderCard(){
       +'<div class="ex">'+esc(c.data.x)+'</div>'
       +'<label class="eyebrow" for="sent">Now use it — write your own sentence</label>'
       +'<textarea id="sent" placeholder="Type a sentence using “'+esc(c.data.w)+'”…"></textarea>'
+      +'<div id="wfeed"></div>'
       +'<div class="tip"><b>Grammar:</b> '+c.tip+'</div>'
-      +'<div class="grow"></div><button class="btn" id="next">Save &amp; continue →</button></div>';
+      +'<div class="grow"></div><button class="btn" id="next">Check my sentence</button></div>';
   }
   else if(c.t==="speak"){
     inner+='<div class="runcard grow"><div class="eyebrow">Interview · '+esc(c.data.cat)+' · out loud, 60 seconds</div>'
       +'<div class="qtext">'+esc(c.data.q)+'</div>'
       +'<div class="tip"><b>What they’re checking:</b> '+esc(c.data.tip)+'</div>'
       +'<div class="timerwrap"><div class="tnum" id="tnum">0:60</div>'
-      +'<div class="trow"><button class="btn soft small" id="tstart" style="width:auto">Start timer</button></div></div>'
-      +'<div class="note">Optional: record yourself in your phone’s Voice Memos — you’ll compare week 1 vs week 4.</div>'
+      +'<div class="trow">'
+      +(speechSupported()?'<button class="btn soft small" id="recBtn" style="width:auto">🎙 Record &amp; get feedback</button>':'')
+      +'<button class="btn soft small" id="tstart" style="width:auto">'+(speechSupported()?'Just time me':'Start timer')+'</button>'
+      +'</div></div>'
+      +'<div id="sfeed"></div>'
+      +'<div class="note">'+(speechSupported()
+         ?'Your voice is transcribed on your device to score pace and filler words. Nothing is uploaded.'
+         :'Optional: record yourself in your phone’s Voice Memos — you’ll compare week 1 vs week 4.')+'</div>'
       +'<div class="grow"></div><button class="btn" id="next">Done — I spoke it →</button></div>';
   }
 
@@ -1161,13 +1168,35 @@ function renderCard(){
         if(left<=0){ clearInterval(RUN.timer); RUN.timer=null; tnum.textContent="Time ✓"; ev.target.textContent="Again"; ev.target.onclick=()=>{}; }
       },1000);
     };
-    document.getElementById("next").onclick=()=>{ if(RUN.timer){clearInterval(RUN.timer);RUN.timer=null;} advance(); };
+    const rb=document.getElementById("recBtn");
+    if(rb) rb.onclick=()=>startSpeechRec(rb, tnum);
+    document.getElementById("next").onclick=()=>{
+      if(RUN.timer){clearInterval(RUN.timer);RUN.timer=null;}
+      if(RUN.rec){ try{RUN.rec.onend=null; RUN.rec.stop();}catch(e){} RUN.rec=null; }
+      advance();
+    };
   }
   else if(c.t==="vocab"){
-    document.getElementById("next").onclick=()=>{
-      const s=document.getElementById("sent").value.trim();
+    const btn=document.getElementById("next"), ta=document.getElementById("sent"), fb=document.getElementById("wfeed");
+    let checked=false;
+    ta.oninput=()=>{ if(checked){ checked=false; btn.textContent="Check again"; } };
+    btn.onclick=()=>{
+      const s=ta.value.trim();
       RUN._sentence={w:c.data.w, s};
-      advance();
+      if(checked){ advance(); return; }
+      const r=checkWriting(s, c.data.w);
+      if(r.empty){
+        fb.innerHTML='<div class="fbanner no"><b>Nothing to check yet</b><br>Writing it yourself is where the word actually sticks — but you can skip.</div>';
+        checked=true; btn.textContent="Skip &amp; continue →"; return;
+      }
+      const clean=r.issues.length===0;
+      if(clean){ sndCorrect(); gainXP(5); } else { sndWrong(); }
+      fb.innerHTML='<div class="fbanner '+(clean?'ok':'no')+'"><b>'
+        +(clean?'Clean sentence! +5 XP bonus':'Nearly — '+r.issues.length+' thing'+(r.issues.length===1?'':'s')+' to fix')+'</b>'
+        +(r.issues.length?'<br>• '+r.issues.map(esc).join('<br>• '):'')
+        +(r.wins.length?'<br><span style="opacity:.75">✓ '+r.wins.map(esc).join(' · ')+'</span>':'')
+        +'</div>';
+      checked=true; btn.textContent="Continue →";
     };
   }
   else {
@@ -1405,6 +1434,122 @@ function tone(f,d,t,type){ if(!S.sound) return; try{
 function sndCorrect(){ tone(660,.12); tone(880,.16,.09); }
 function sndWrong(){ tone(200,.18,0,"triangle"); }
 function sndDone(){ tone(523,.12); tone(659,.12,.10); tone(784,.22,.20); }
+
+// ---- feedback engines (all local: no server, no API) ----
+const FILLERS=["um","uh","erm","ah","like","basically","actually","literally","honestly","anyway","stuff","things"];
+const FILLER_PHRASES=["you know","i mean","sort of","kind of","and so on"];
+// words spelled with a vowel but spoken with a consonant sound (take "a"), and vice-versa
+const TAKES_A=/^(university|universal|unique|useful|user|using|union|unit|uniform|usual|european|euro|one|once)/i;
+const TAKES_AN=/^(hour|honest|honou?r|heir|honorary)/i;
+
+function checkWriting(text, word){
+  const t=(text||"").trim();
+  if(!t) return {empty:true, issues:[], wins:[], score:0, wc:0};
+  const issues=[], wins=[];
+  const root=(word||"").toLowerCase().replace(/(ation|ities|ity|ing|ed|s)$/,"");
+  if(root && t.toLowerCase().indexOf(root)<0) issues.push("Use the word “"+word+"” — that’s the whole exercise.");
+  else if(root) wins.push("used “"+word+"” in context");
+  const wc=t.split(/\s+/).filter(Boolean).length;
+  if(wc<5) issues.push("Too short — aim for 6+ words so it’s a full sentence.");
+  else wins.push(wc+" words");
+  if(!/^[A-Z]/.test(t)) issues.push("Start with a capital letter.");
+  if(!/[.!?]$/.test(t)) issues.push("End with a period.");
+  if(/\bi\b/.test(t)) issues.push("Capitalise “I” — always uppercase in English.");
+  const a1=t.match(/\ba\s+([aeiou][a-z]*)/i);
+  if(a1 && !TAKES_A.test(a1[1])) issues.push("“a "+a1[1]+"” → “an "+a1[1]+"” (vowel sound).");
+  const a2=t.match(/\ban\s+([bcdfghjklmnpqrstvwxyz][a-z]*)/i);
+  if(a2 && !TAKES_AN.test(a2[1])) issues.push("“an "+a2[1]+"” → “a "+a2[1]+"”.");
+  const dbl=t.match(/\b(\w+)\s+\1\b/i);
+  if(dbl) issues.push("Repeated word: “"+dbl[1]+" "+dbl[1]+"”.");
+  if(/\s+[,.!?]/.test(t)) issues.push("No space before punctuation.");
+  if(/\byour\s+(welcome|going|right)\b/i.test(t)) issues.push("“your” → “you’re” (you are).");
+  if(/\bits\s+(a|the|not|going)\b/i.test(t)) issues.push("“its” → “it’s” (it is).");
+  return {empty:false, issues, wins, score:Math.max(0,5-issues.length), wc};
+}
+
+function analyzeSpeech(transcript, seconds){
+  const raw=(transcript||"").trim();
+  const low=raw.toLowerCase();
+  const words=low?low.split(/\s+/).filter(Boolean):[];
+  const n=words.length;
+  const secs=Math.max(1,seconds||1);
+  const wpm=Math.round(n/(secs/60));
+  let fillers=0;
+  words.forEach(w=>{ if(FILLERS.indexOf(w.replace(/[^a-z']/g,""))>=0) fillers++; });
+  FILLER_PHRASES.forEach(p=>{ const m=low.match(new RegExp("\\b"+p+"\\b","g")); if(m) fillers+=m.length; });
+  const tips=[];
+  if(n){
+    if(wpm>175) tips.push("You're racing at "+wpm+" wpm — slow down. Calm reads as confident.");
+    else if(wpm<105) tips.push("A little slow at "+wpm+" wpm — keep the energy up.");
+    else tips.push("Great pace ("+wpm+" wpm) — right in the interview sweet spot.");
+    if(fillers>=4) tips.push(fillers+" filler words. Pause in silence instead — silence sounds smarter than “um”.");
+    else if(fillers>0) tips.push("Only "+fillers+" filler"+(fillers===1?"":"s")+" — good control.");
+    else tips.push("Zero fillers. That's rare, and it sounds sharp.");
+    if(n<25) tips.push("Only "+n+" words — add a concrete example so the answer feels complete.");
+    if(secs<25) tips.push("Short answer — aim for 40–60s so you can give a real example.");
+    else if(secs>80) tips.push("You ran long — land the plane by about 60 seconds.");
+  }
+  let score=5;
+  if(fillers>=4) score-=2; else if(fillers>=2) score-=1;
+  if(wpm>175||wpm<105) score-=1;
+  if(n<25) score-=1;
+  score=Math.max(1,Math.min(5,score));
+  return {transcript:raw, words:n, wpm, fillers, tips, score, seconds:secs};
+}
+function speechSupported(){ return !!(window.SpeechRecognition||window.webkitSpeechRecognition); }
+
+function startSpeechRec(btn, tnum){
+  const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+  const fb=document.getElementById("sfeed");
+  let r; try{ r=new SR(); }catch(e){
+    fb.innerHTML='<div class="fbanner no"><b>Mic isn’t available here</b><br>Use “Just time me” and speak out loud — it still counts.</div>'; return; }
+  r.lang="en-CA"; r.continuous=true; r.interimResults=true;
+  let finalT="", t0=Date.now(), left=60, ended=false;
+  RUN.rec=r;
+  btn.textContent="⏹ Stop & get feedback";
+  btn.onclick=()=>{ try{ r.stop(); }catch(e){} };
+  fb.innerHTML='<div class="fbanner ok"><b>Listening…</b><br><span id="live" style="font-weight:600;opacity:.85"></span></div>';
+  if(RUN.timer) clearInterval(RUN.timer);
+  RUN.timer=setInterval(()=>{
+    left--; tnum.textContent="0:"+String(Math.max(left,0)).padStart(2,"0");
+    if(left<=0){ try{ r.stop(); }catch(e){} }
+  },1000);
+  r.onresult=(e)=>{
+    let interim="";
+    for(let i=e.resultIndex;i<e.results.length;i++){
+      const tr=e.results[i][0].transcript;
+      if(e.results[i].isFinal) finalT+=tr+" "; else interim+=tr;
+    }
+    const live=document.getElementById("live");
+    if(live) live.textContent=(finalT+interim).slice(-150);
+  };
+  r.onerror=(e)=>{
+    ended=true; if(RUN.timer){clearInterval(RUN.timer); RUN.timer=null;} RUN.rec=null;
+    const denied=(e&&(e.error==="not-allowed"||e.error==="service-not-allowed"));
+    fb.innerHTML='<div class="fbanner no"><b>'+(denied?'Microphone blocked':'Didn’t catch that')+'</b><br>'
+      +(denied?'Allow the mic in your browser settings, or just use “Just time me”.':'Try again, or use “Just time me” and speak out loud.')+'</div>';
+    btn.textContent="🎙 Try again"; btn.onclick=()=>startSpeechRec(btn,tnum);
+  };
+  r.onend=()=>{
+    if(ended) return; ended=true;
+    if(RUN.timer){clearInterval(RUN.timer); RUN.timer=null;} RUN.rec=null;
+    tnum.textContent="Time ✓";
+    const a=analyzeSpeech(finalT, Math.round((Date.now()-t0)/1000));
+    if(!a.words){
+      fb.innerHTML='<div class="fbanner no"><b>I didn’t hear anything</b><br>Speak a bit louder, or use “Just time me”.</div>';
+      btn.textContent="🎙 Try again"; btn.onclick=()=>startSpeechRec(btn,tnum); return;
+    }
+    sndDone();
+    fb.innerHTML='<div class="fbanner '+(a.score>=4?'ok':'no')+'"><b>'+a.score+'/5 · '+a.wpm+' wpm · '
+      +a.fillers+' filler'+(a.fillers===1?'':'s')+'</b><br>• '+a.tips.map(esc).join('<br>• ')+'</div>'
+      +'<div class="tip" style="margin-top:10px"><b>What you said:</b> '+esc(a.transcript)+'</div>';
+    S.speakChecks.push({d:todayStr(), r:a.score, wpm:a.wpm, f:a.fillers});
+    if(S.speakChecks.length>500) S.speakChecks.shift();
+    gainXP(5); saveState();
+    btn.textContent="🎙 Record again"; btn.onclick=()=>startSpeechRec(btn,tnum);
+  };
+  try{ r.start(); }catch(e){ r.onerror({error:"start-failed"}); }
+}
 
 const PATH_X=[0,40,66,40,0,-40,-66,-40];
 const CH_TITLES={1:"The Canadian Securities Industry",2:"The Capital Market",3:"The Canadian Regulatory Environment",4:"Overview of Economics",5:"Economic Policy",6:"Fixed-Income: Features & Types",7:"Fixed-Income: Pricing & Trading",8:"Equity: Common & Preferred Shares",9:"Equity Transactions",10:"Derivatives",11:"Corporations & Financial Statements",12:"Financing & Listing Securities",13:"Fundamental & Technical Analysis",14:"Company Analysis",15:"The Portfolio Approach",16:"The Portfolio Management Process",17:"Mutual Funds: Structure & Regulation",18:"Mutual Funds: Types & Features",19:"Exchange-Traded Funds",20:"Alternatives: Benefits, Risks, Structure",21:"Alternatives: Strategies & Performance",22:"Other Managed Products",23:"Structured Products",24:"Canadian Taxation",25:"Fee-Based Accounts",26:"Working with the Retail Client",27:"Working with the Institutional Client"};
@@ -1766,7 +1911,18 @@ function runSelfCheck(){
   A(p3.filter(x=>x==="lesson").length===3 && p3.filter(x=>x==="quiz").length===3,"3 topics/day → 3 lessons+3 quizzes");
   S.topicsPerDay=1; A(planTypes("light").join()==="vocab,speak","light day unchanged (work-day protection)");
   S.topicsPerDay=savedTP;
-  console.log("SELFTEST PASS ✓ (31 checks)");
+  // writing coach
+  A(checkWriting("","Yield").empty===true,"writing: empty detected");
+  A(checkWriting("The bond's yield is higher than my savings account.","Yield").issues.length===0,"writing: clean sentence passes");
+  A(checkWriting("i think a apple is good","Yield").issues.length>=4,"writing: catches caps/period/a-an/missing word");
+  A(checkWriting("I saved a university fund for my liquidity needs.","Liquidity").issues.length===0,"writing: 'a university' NOT flagged");
+  A(checkWriting("It took an hour to explain liquidity to him.","Liquidity").issues.length===0,"writing: 'an hour' NOT flagged");
+  // speech coach
+  const sp=analyzeSpeech("um I think like the market is um basically fine you know", 30);
+  A(sp.words===12 && sp.fillers>=5,"speech: counts words + fillers (w="+sp.words+" f="+sp.fillers+")");
+  A(analyzeSpeech("",10).words===0,"speech: empty transcript safe");
+  A(analyzeSpeech(new Array(70).fill("word").join(" "),30).wpm===140,"speech: wpm math");
+  console.log("SELFTEST PASS ✓ (39 checks)");
 }
 if(location.search.indexOf("selftest")>=0){ try{ runSelfCheck(); }catch(e){} }
 
